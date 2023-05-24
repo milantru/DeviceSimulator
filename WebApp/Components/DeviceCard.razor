@@ -1,0 +1,158 @@
+﻿@inject IConfiguration config
+@inject IJSRuntime js
+@using Microsoft.Azure.Devices;
+
+@if (isInitiated)
+{
+    <div class="w-75 border border-primary rounded m-3 p-3">
+        <h2>Device: @DeviceId</h2>
+        
+        <div>
+            Automatic watering: <span class="circle" style="background-color: @(isAutomaticWateringOn ? "green": "red")"></span>
+            
+            <button type="button" class="btn btn-primary m-1" @onclick="TurnAutomaticWateringOnAsync">Turn on automatic watering</button>
+            <button type="button" class="btn btn-primary m-1" @onclick="TurnAutomaticWateringOffAsync">Turn off automatic watering</button>
+        </div>
+
+
+        <div>
+            <div>
+                <button type="button" class="btn btn-primary m-1" @onclick="PlotLastMeasurementsAsync">Show last measurements</button>
+                
+                @if (isGraphVisible)
+                {
+                    <button type="button" class="btn btn-secondary m-1" @onclick="() => isGraphVisible = false">Close graph</button>
+                }
+            </div>
+            
+            <div class="w-50">
+                <canvas id="graph-@(DeviceId)" style="@(isGraphVisible ? "" : "display: none;")"></canvas>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <p>Načítava sa...</p>
+}
+
+@code {
+    private bool isInitiated = false;
+    private string iotHubConnectionString = null!;
+    private bool isGraphVisible = false;
+    private bool isAutomaticWateringOn;
+
+    [Parameter]
+    public string DeviceId { get; set; } = null!;
+
+    [Parameter]
+    public ServiceClient ServiceClient { get; set; } = null!;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await base.OnParametersSetAsync();
+
+        await UpdateIsAutomaticWateringOnAsync();
+
+        isInitiated = true;
+    }
+
+    private async Task<CloudToDeviceMethodResult> ExecuteCloudToDeviceMethodAsync(string methodName)
+    {
+        var methodInvocation = new CloudToDeviceMethod(
+            methodName: methodName
+        );
+
+        CloudToDeviceMethodResult response = null!;
+        try
+        {
+            response = await ServiceClient.InvokeDeviceMethodAsync(DeviceId, methodInvocation);
+        }
+        catch (Exception ex)
+        {
+            var errMsg = "Invoking device method has failed.";
+
+            if (ex.Message == "The operation was canceled.")
+            {
+                await Console.Out.WriteLineAsync(errMsg + " Retrying...");
+                response = await ExecuteCloudToDeviceMethodAsync(methodName);
+            }
+            else
+            {
+                throw new Exception(errMsg);
+            }
+        }
+
+        return response;
+    }
+
+    private async Task<TOut> ExecuteCloudToDeviceMethodAsync<TOut>(string methodName)
+    {
+        TOut res = default!;
+
+        var response = await ExecuteCloudToDeviceMethodAsync(methodName);
+
+        if (response is null)
+        {
+            await Console.Out.WriteLineAsync("Response was null. Retrying...");
+            response = await ExecuteCloudToDeviceMethodAsync(methodName);
+        }
+        else if (response.Status == 200)
+        {
+            var responseJson = response.GetPayloadAsJson();
+
+            try
+            {
+                res = Newtonsoft.Json.JsonConvert.DeserializeObject<TOut>(responseJson)!;
+            }
+            catch
+            {
+                throw new Exception($"Deserialization has failed.");
+            }
+        }
+        else
+        {
+            throw new Exception($"Method invocation failed. Status code: {response.Status}");
+        }
+
+        return res;
+    }
+
+    private async Task ExecuteCloudToDeviceVoidMethodAsync(string methodName)
+    {
+        var response = await ExecuteCloudToDeviceMethodAsync(methodName);
+
+        if (response.Status != 200)
+        {
+            throw new Exception($"Method invocation failed. Status code: {response.Status}");
+        }
+    }
+
+    private async Task PlotLastMeasurementsAsync()
+    {
+        var lastMeasurements = await ExecuteCloudToDeviceMethodAsync<List<int>>("GetLastMeasurementsAsync");
+
+        await js.InvokeVoidAsync("plotGraph", DeviceId, lastMeasurements);
+
+        isGraphVisible = true;
+    }
+
+    private async Task TurnAutomaticWateringOnAsync()
+    {
+        await ExecuteCloudToDeviceVoidMethodAsync("TurnAutomaticWateringOnAsync");
+
+        isAutomaticWateringOn = true;
+    }
+
+    private async Task TurnAutomaticWateringOffAsync()
+    {
+        await ExecuteCloudToDeviceVoidMethodAsync("TurnAutomaticWateringOffAsync");
+
+        isAutomaticWateringOn = false;
+    }
+
+    private async Task UpdateIsAutomaticWateringOnAsync()
+    {
+        isAutomaticWateringOn = await ExecuteCloudToDeviceMethodAsync<bool>("GetIsAutomaticWateringOnAsync");
+    }
+}

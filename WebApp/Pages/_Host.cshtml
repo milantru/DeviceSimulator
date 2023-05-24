@@ -1,0 +1,35 @@
+﻿@page "/"
+@namespace WebApp.Pages
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@{
+    Layout = "_Layout";
+}
+
+<head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js"></script>
+    <script>
+        window.plotGraph = (deviceId, data) => {
+            var ctx = document.getElementById('graph-' + deviceId).getContext('2d');
+
+            var chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.map((_, index) => index),
+                    datasets: [{
+                        data: data,
+                        label: 'Merania vlhkosti pôdy zariadenia ' + deviceId,
+                        backgroundColor: context => {
+                            var yValue = context.dataset.data[context.dataIndex];
+                            // yValue < humidityThresholdForWatering (from Device class)
+                            return yValue < 500 ? 'red' : 'rgba(0,0,255,1.0)';
+                        },
+                        borderColor: "rgba(0,0,255,0.1)",
+                        fill: false
+                    }]
+                }
+            });
+        }
+    </script>
+</head>
+
+<component type="typeof(App)" render-mode="ServerPrerendered" />

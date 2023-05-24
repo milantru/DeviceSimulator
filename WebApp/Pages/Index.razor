@@ -1,0 +1,43 @@
+﻿@page "/"
+@using Microsoft.Azure.Devices;
+
+@implements IAsyncDisposable
+@inject IConfiguration config
+
+<PageTitle>Index</PageTitle>
+
+@if (deviceIds is not null)
+{
+    @foreach (var deviceId in deviceIds)
+    {
+        <DeviceCard DeviceId="@deviceId" ServiceClient="@serviceClient" />
+    }
+}
+
+@code {
+    private IReadOnlyList<string> deviceIds = null!;
+    private ServiceClient serviceClient { get; set; } = null!;
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+
+        var iotHubConnectionString = config.GetValue<string>("iotHubConnectionString");
+
+        serviceClient = ServiceClient.CreateFromConnectionString(
+            connectionString: iotHubConnectionString
+        );
+
+        deviceIds = config.GetSection("deviceIds")
+                        .GetChildren()
+                        .Select(x => x.Value)
+                        .ToList();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await serviceClient.CloseAsync();
+
+        serviceClient.Dispose();
+    }
+}
