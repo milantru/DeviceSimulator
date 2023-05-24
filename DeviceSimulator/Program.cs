@@ -2,7 +2,7 @@
 using Microsoft.Extensions.Configuration;
 
 var config = new ConfigurationBuilder()
-    .AddUserSecrets("1e7e8041-8ea9-4c2b-af36-f3e54580cb94")
+    .AddUserSecrets(System.Reflection.Assembly.GetExecutingAssembly())
     .Build();
 
 var deviceConnectionStrings = config.GetSection("deviceConnectionStrings")
@@ -17,4 +17,4 @@ await deviceManager.TurnOnDeviceAsync(deviceConnectionStrings);
 // Keep the simulation alive
 Console.ReadLine();
 
-await deviceManager.TurnOffDevices();
+await deviceManager.TurnOffDevicesAsync();

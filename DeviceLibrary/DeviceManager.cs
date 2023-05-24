@@ -12,7 +12,7 @@
 		/// </summary>
         /// <para>
         /// <remarks>
-        /// Even though the method was awaited, it may take some minute until the device methods are successfully 
+        /// Even though the method was awaited, it may take few minutes until the device methods are successfully 
         /// registered and ready to be used.
         /// </remarks>
         /// </para>
@@ -32,7 +32,7 @@
 		/// </summary>
 		/// <para>
 		/// <remarks>
-		/// Even though the method was awaited, it may take some minute until the device methods are successfully 
+		/// Even though the method was awaited, it may take few minutes until the device methods are successfully 
 		/// registered and ready to be used.
 		/// </remarks>
 		/// </para>
@@ -54,7 +54,7 @@
 		/// Turns off all the devices (and frees the resources) managed by the device manager asynchronously.
 		/// </summary>
 		/// <returns>A task representing the asynchronous operation.</returns>
-		public async Task TurnOffDevices()
+		public async Task TurnOffDevicesAsync()
         {
             for (int i = devices.Count - 1; i >= 0; i--)
             {

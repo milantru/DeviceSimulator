@@ -63,12 +63,26 @@ namespace DeviceLibrary
 
             var device = new Device(connectionString, deviceClient);
 
-            await deviceClient.SetMethodHandlerAsync("GetLastMeasurementsAsync", async (_, _) => await device.GetLastMeasurementsAsync(), null);
-            await deviceClient.SetMethodHandlerAsync("TurnAutomaticWateringOnAsync", async (_, _) => await device.TurnAutomaticWateringOnAsync(), null);
-            await deviceClient.SetMethodHandlerAsync("TurnAutomaticWateringOffAsync", async (_, _) => await device.TurnAutomaticWateringOffAsync(), null);
-            await deviceClient.SetMethodHandlerAsync("GetIsAutomaticWateringOnAsync", async (_, _) => await device.GetIsAutomaticWateringOnAsync(), null);
-
-            await Console.Out.WriteLineAsync("Methods has been registered " + device.Id);
+            await deviceClient.SetMethodHandlerAsync(
+                methodName: "GetLastMeasurementsAsync", 
+                methodHandler: async (_, _) => await device.GetLastMeasurementsAsync(), 
+                userContext: null
+            );
+            await deviceClient.SetMethodHandlerAsync(
+                methodName:"TurnAutomaticWateringOnAsync", 
+                methodHandler: async (_, _) => await device.TurnAutomaticWateringOnAsync(), 
+                userContext: null
+            );
+            await deviceClient.SetMethodHandlerAsync(
+                methodName:"TurnAutomaticWateringOffAsync", 
+                methodHandler: async (_, _) => await device.TurnAutomaticWateringOffAsync(), 
+                userContext: null
+            );
+            await deviceClient.SetMethodHandlerAsync(
+                methodName:"GetIsAutomaticWateringOnAsync", 
+                methodHandler: async (_, _) => await device.GetIsAutomaticWateringOnAsync(), 
+                userContext: null
+            );
 
             return device;
         }
